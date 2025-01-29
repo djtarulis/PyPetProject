@@ -1,0 +1,32 @@
+<h2>{{ user.username }}'s Inventory</h2>
+
+<!-- Dropdown for Filtering -->
+<form method="get" action="{% url 'user_inventory' %}">
+    <label for="filter">Filter by:</label>
+    <select name="filter" id="filter" onchange="this.form.submit()">
+        <option value="" {% if not request.GET.filter %}selected{% endif %}>All Items</option>
+        <option value="happiness" {% if request.GET.filter == 'happiness' %}selected{% endif %}>Happiness Items</option>
+        <option value="food" {% if request.GET.filter == 'food' %}selected{% endif %}>Food Items</option>
+        <option value="toy" {% if request.GET.filter == 'toy' %}selected{% endif %}>Toy Items</option>
+        <option value="health" {% if request.GET.filter == 'health' %}selected{% endif %}>Health Items</option>
+        <option value="energy" {% if request.GET.filter == 'energy' %}selected{% endif %}>Energy Items</option>
+    </select>
+</form>
+
+<!-- Display Inventory -->
+<ul>
+    {% for item in inventory %}
+        <li>
+            <strong>{{ item.item.name }}</strong>: {{ item.quantity }}
+            <p>Description: {{ item.item.description }}</p>
+            <p>Price: {{ item.item.price }}</p>
+            {% if item.item.is_food %}
+                <p>Type: Food</p>
+            {% elif item.item.is_toy %}
+                <p>Type: Toy</p>
+            {% endif %}
+            <p>Happiness Increase: {{ item.item.happiness_increase }}</p>
+            <p>Health Increase: {{ item.item.health_increase }}</p>
+        </li>
+    {% endfor %}
+</ul>

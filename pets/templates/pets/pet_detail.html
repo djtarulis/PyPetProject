@@ -1,0 +1,19 @@
+<h2>{{ pet.name }}'s Stats</h2>
+<p>Health: {{ pet.health }}/{{ pet.max_health }}</p>
+<p>Happiness: {{ pet.happiness }}%</p>
+<p>Energy: {{ pet.energy }}/{{ pet.max_energy }}</p>
+
+<h3>Your Inventory</h3>
+<ul>
+    {% for inventory_item in inventory %}
+        <li>
+            <strong>{{ inventory_item.item.name }}</strong> (x{{ inventory_item.quantity }})
+            {% if inventory_item.item.is_food or inventory_item.item.is_toy %}
+                <form method="post" action="{% url 'use_item' inventory_item.id pet.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Use</button>
+                </form>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
