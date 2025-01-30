@@ -1,10 +1,9 @@
 from django.test import TestCase
-from django.contrib.auth.models import User
-from .models import Pet
+from .models import Pet, CustomUser, Item, Pet, Inventory
 
 class PetModelTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create(username="testuser")
+        self.user = CustomUser.objects.create_user(username='testuser', password='password123')
         self.pet = Pet.objects.create(owner=self.user, name="Fluffy", species="Dog", happiness=90, health=80)
 
     def test_happiness_clamped_to_100(self):
@@ -26,3 +25,32 @@ class PetModelTest(TestCase):
         self.pet.health = -10  # Attempt to set health to -10
         self.pet.save()
         self.assertEqual(self.pet.health, 0)  # Ensure it's clamped to 0
+    
+class CustomUserTests(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(username='testuser', password='password123')
+        self.item1 = Item.objects.create(name='Ball', description='A toy ball', price=10)
+        self.item2 = Item.objects.create(name='Apple', description='A healthy snack', price=5)
+        self.pet = Pet.objects.create(owner=self.user, name='Buddy', health=100, happiness=100, energy=90)
+
+    def test_user_creation(self):
+        self.assertEqual(CustomUser.objects.count(), 1)
+        self.assertEqual(self.user.username, 'testuser')
+
+    def test_inventory_management(self):
+        inventory_item = Inventory.objects.create(user=self.user, item=self.item1, quantity=2)
+        self.assertEqual(inventory_item.user.username, 'testuser')
+        self.assertEqual(inventory_item.item.name, 'Ball')
+        self.assertEqual(inventory_item.quantity, 2)
+
+    def test_pet_creation(self):
+        self.assertEqual(Pet.objects.count(), 1)
+        self.assertEqual(self.pet.name, 'Buddy')
+        self.assertEqual(self.pet.owner, self.user)
+
+class InventoryTests(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(username='testuser', password='password123')
+        self.item1 = Item.objects.create(name='Bone', description='A crunchy bone', price=20)
+
+# TODO: FINISH SETTING UP INVENTORY TESTS
