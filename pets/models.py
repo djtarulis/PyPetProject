@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     """
     Extends Django's default User model with additional fields.
     """
-    currency = models.IntegerField(default=1000)    # Initiall currency
+    currency = models.IntegerField(default=1000)    # Initial currency
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)  # Optional user avatar
 
     def __str__(self):
@@ -54,11 +54,15 @@ class CustomUser(AbstractUser):
         self.currency += amount
         self.save()  
     
-
+# TODO: implement pet actions: play, rest, train, etc
 class Pet(models.Model):    # Pet attributes
+    # User definitions
     id = models.AutoField(primary_key=True)  # Ensures a unique ID
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pets")
     name = models.CharField(max_length=25)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Basic information
     species = models.CharField(max_length=50)
     age = models.IntegerField(default=0)
     happiness = models.IntegerField(default=100)
@@ -67,15 +71,28 @@ class Pet(models.Model):    # Pet attributes
     max_health = models.IntegerField(default=100)
     energy = models.IntegerField(default=100)
     max_energy = models.IntegerField(default=100)
-    created_at = models.DateTimeField(auto_now_add=True)
-    """TODO: Include avatars, level"""
+    """TODO: Include avatars"""
+
+    # Attributes
+    strength = models.IntegerField(default=5)   # dictates physical damage
+    dexterity = models.IntegerField(default=5)  # dictates speed
+    intelligence = models.IntegerField(default=5)   # dictates leveling speed
+    constitution = models.IntegerField(default=5)   # dictates health
+    luck = models.IntegerField(default=5)   # Lucky Lucky!
+
+    # Leveling
+    level = models.IntegerField(default=1)  # Pet level
+    experience = models.IntegerField(default=0) # Total exp
+    experience_to_next_level = models.IntegerField(default=100) # Exp to next level
+
 
     def save(self, *args, **kwargs):
         """
-        Clamp happiness and health between 0 and 100
+        Clamp happiness and health between 0 and maximum stat
         """
-        self.happiness = max(0, min(self.happiness, 100))
-        self.health = max(0, min(self.health, 100))
+        self.happiness = max(0, min(self.happiness, self.max_happiness))
+        self.health = max(0, min(self.health, self.max_health))
+        self.energy = max(0, min(self.energy, self.max_energy))
         super().save(*args, **kwargs)  # Call the original save method
 
     def feed(self, user, item_id):
@@ -97,7 +114,56 @@ class Pet(models.Model):    # Pet attributes
         return False    # Feeding failed
 
     def __str__(self):
-        return f"{self.name} ({self.species})"
+        return f"{self.name} ({self.species}) (Level {self.level})"
+    
+    def add_experience(self, xp):
+        """
+        Add exp to the pet and handle level-ups
+        """
+        self.experience += xp
+        while self.experience >= self.experience_to_next_level:
+            self.level_up()
+
+    def level_up(self):
+        """
+        Level up pet and increase stats
+        """
+        self.level += 1
+        self.experience -= self.experience_to_next_level
+        self.experience_to_next_level = int(self.experience_to_next_level * 1.5)    # find proper algo for next level exp
+        self.save()
+
+        # Stat ups on level
+    def add_strength(self):
+        self.strength += 1
+        # TODO: increase base damage
+        self.save()
+        return f"Increased {self.name}\'s strength by 1!"
+    
+    def add_dexterity(self):
+        self.dexterity += 1
+        # TODO: increase speed
+        self.save()
+        return f"Increased {self.name}\'s dexterity by 1!"
+
+    def add_intelligence(self):
+        self.intelligence += 1
+        # TODO: increase exp gain rate
+        self.save()
+        return f"Increased {self.name}\'s intelligence by 1!"
+
+    def add_constitution(self):
+        self.constitution += 1
+        self.max_health += 10
+        self.save()
+        return f"Increased {self.name}\'s constitution by 1!"
+    
+    def add_luck(self):
+        self.luck += 1
+        # TODO: find a use for luck... increase $$ gains?
+        self.save()
+        return f"Increased {self.name}\'s luck by 1!"
+    
 
 class Item(models.Model): # Generic item model
     """
@@ -120,9 +186,9 @@ class Inventory(models.Model):
     """
     Tracks which item a user owns and how many.
     """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="inventory")
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="inventory")
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="inventory_item")
-    quantity = models.IntegerField(default=0) # Number of item user owns.
+    quantity = models.PositiveIntegerField(default=0) # Number of item user owns.
 
     def __str__(self):
         """
@@ -195,9 +261,22 @@ class Inventory(models.Model):
         else:
             self.save()
 
-"""
-TODO: Implement transactions, create a global shop
-"""
+    def clean(self):
+        """
+        Validate inventory data.
+        """
+        if self.quantity < 0:
+            raise ValidationError("Quantity cannot be negative")
+
+    def save(self, *args, **kwargs):
+        """
+        Override save to enforce validation.
+        """
+        self.clean()
+        super().save(*args, **kwargs)
+
+#TODO: Implement transactions, create a global shop
+
 class Transaction(models.Model):    # Currency transaction
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)

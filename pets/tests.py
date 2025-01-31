@@ -48,9 +48,26 @@ class CustomUserTests(TestCase):
         self.assertEqual(self.pet.name, 'Buddy')
         self.assertEqual(self.pet.owner, self.user)
 
-class InventoryTests(TestCase):
+class InventoryEdgeCasesTests(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(username='testuser', password='password123')
-        self.item1 = Item.objects.create(name='Bone', description='A crunchy bone', price=20)
+        self.item = Item.objects.create(name='Bone', description='A crunchy bone', price=20)
 
 # TODO: FINISH SETTING UP INVENTORY TESTS
+    def test_negative_quantity(self):
+        with self.assertRaises(ValueError):
+            Inventory.objects.create(user=self.user, item=self.item, quantity=-5)
+    
+    def test_zero_quantity(self):
+        inventory_item = Inventory.objects.create(user=self.user, item=self.item, quantity=0)
+        self.assertEqual(inventory_item.quantity, 0)
+
+    # Not sure if this is how I want to handle inventory yet...
+    # def test_duplicate_inventory_entries(self):
+    #     Inventory.objects.create(user=self.user, item=self.item, quantity=5)
+    #     with self.assertRaises(Exception):
+    #         Inventory.objects.create(user=self.user, item=self.item, quantity=3)
+        
+    def test_large_quantity(self):
+        inventory_item = Inventory.objects.create(user=self.user, item=self.item, quantity=1000000)
+        self.assertEqual(inventory_item.quantity, 1000000)

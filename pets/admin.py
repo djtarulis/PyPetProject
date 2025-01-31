@@ -79,7 +79,7 @@ class ItemAdmin(admin.ModelAdmin):
 
 @admin.register(Pet)
 class PetAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'owner', 'age', 'health', 'happiness', 'energy']
+    list_display = ['id', 'name', 'owner', 'level', 'age', 'health', 'happiness', 'energy']
     
 @admin.register(Transaction)
 class GlobalTransactions(admin.ModelAdmin):
@@ -88,5 +88,7 @@ class GlobalTransactions(admin.ModelAdmin):
 
 @admin.register(Inventory)
 class InventoryAdmin(admin.ModelAdmin):
-    """Admin panel for managing Inventory."""
+    """
+    Admin panel for managing Inventory.
+    """
     list_display = ['user', 'item', 'quantity']
